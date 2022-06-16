@@ -1,22 +1,32 @@
 package com.example.findthestatue
 
 import android.Manifest
-import android.content.ContentValues
+import android.app.Activity
+import android.app.Instrumentation
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.Image
+import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
+import android.view.MotionEvent
+import android.view.View
+import android.widget.ImageButton
 import android.widget.Toast
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.example.findthestatue.databinding.ActivityMainBinding
-import java.text.SimpleDateFormat
+import java.io.File
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -29,54 +39,77 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var cameraExecutor: ExecutorService
 
-    private lateinit var img : Image
+    private lateinit var file: File
+
+    private lateinit var cameraControl: CameraControl
+
+    val pickImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback{
+        if(it != null) startInfo(it.toString())
+
+    })
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
+        val previewView = viewBinding.viewFinder
+        val focusRectangleView = viewBinding.focusRect
+        rectangleDelay(focusRectangleView)
 
-        // Request camera permissions
+        openAndClearCache()
+
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
-        // Set up the listeners for take photo and video capture buttons
+
+
+        viewBinding.addPhotoBtn.setOnClickListener{
+            pickImage.launch("image/*")
+        }
+
         viewBinding.imageCaptureButton.setOnClickListener {
             takePhoto()
-            val informationIntent = Intent(this, InformationActivity::class.java)
-            startActivity(informationIntent)
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
+
+        viewBinding.viewFinder.setOnTouchListener(View.OnTouchListener setOnTouchListener@{ view: View, motionEvent: MotionEvent ->
+            when (motionEvent.action) {
+                MotionEvent.ACTION_DOWN -> return@setOnTouchListener true
+                MotionEvent.ACTION_UP -> {
+                    val factory = previewView.getMeteringPointFactory()
+
+                    val x =motionEvent.x
+                    val y = motionEvent.y
+                    val point = factory.createPoint(x, y)
+                    focusRectangleView.visibility = View.VISIBLE
+                    focusRectangleView.x= x
+                    focusRectangleView.y =y
+                    val action = FocusMeteringAction.Builder(point).build()
+
+                    cameraControl.startFocusAndMetering(action)
+                    rectangleDelay(focusRectangleView)
+
+                    return@setOnTouchListener true
+                }
+                else -> return@setOnTouchListener false
+            }
+        })
+
     }
 
     private fun takePhoto() {
-        // Get a stable reference of the modifiable image capture use case
+
         val imageCapture = imageCapture ?: return
 
-        // Create time stamped name and MediaStore entry.
-        val name = SimpleDateFormat(FILENAME_FORMAT, Locale.US)
-            .format(System.currentTimeMillis())
-        val contentValues = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FindTheStatue")
-            }
-        }
 
-        // Create output options object which contains file + metadata
+
         val outputOptions = ImageCapture.OutputFileOptions
-            .Builder(contentResolver,
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                contentValues)
+            .Builder(file)
             .build()
-        // Set up image capture listener, which is triggered after photo has
-        // been taken
-
 
         imageCapture.takePicture(
             outputOptions,
@@ -91,37 +124,36 @@ class MainActivity : AppCompatActivity() {
                     val msg = "Photo capture succeeded, processing..."
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
+                    startInfo(file.absolutePath)
                 }
             }
         )
     }
 
-
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            // Used to bind the lifecycle of cameras to the lifecycle owner
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            // Preview
             val preview = Preview.Builder()
+
                 .build()
                 .also {
                     it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
             imageCapture = ImageCapture.Builder().build()
-            // Select back camera as a default
+
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
-                // Unbind use cases before rebinding
+
                 cameraProvider.unbindAll()
 
-                // Bind use cases to camera
                 val camera = cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview,imageCapture)
 
+                cameraControl = camera.cameraControl
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -160,6 +192,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "FindTheStatue"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
+        private const val FILENAME = "appPrivate"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
             mutableListOf (
@@ -171,5 +204,22 @@ class MainActivity : AppCompatActivity() {
             }.toTypedArray()
     }
 
+    private fun startInfo(URI : String){
+        val informationIntent = Intent(this, InformationActivity::class.java)
+        informationIntent.putExtra("URI", URI)
+        startActivity(informationIntent)
+    }
+
+    private fun openAndClearCache(){
+        File.createTempFile(FILENAME,null,this.cacheDir)
+        file = File(this.cacheDir, FILENAME)
+        file.delete()
+    }
+
+    private fun rectangleDelay(rectView : View){
+        Handler(Looper.getMainLooper()).postDelayed({
+            rectView.visibility=View.GONE
+        }, 1000)
+    }
 
 }

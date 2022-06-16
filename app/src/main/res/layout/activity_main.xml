@@ -29,6 +29,7 @@
         />
 
     <ImageButton
+        android:id="@+id/add_photo_btn"
         android:layout_width="70dp"
         android:layout_height="70dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -40,6 +41,7 @@
         android:background="@drawable/round_corners_button"/>
 
     <ImageButton
+        android:id="@+id/show_history_btn"
         android:layout_width="70dp"
         android:layout_height="70dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -49,4 +51,18 @@
         android:backgroundTint="@color/second_color"
         android:src="@drawable/ic_history"
         android:background="@drawable/round_corners_button"/>
+
+
+    <View
+        android:id="@+id/focus_rect"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:background="@drawable/rect"/>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

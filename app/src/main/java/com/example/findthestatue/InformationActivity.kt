@@ -2,11 +2,12 @@ package com.example.findthestatue
 
 
 
-import android.graphics.BitmapFactory
+
+import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+
 
 
 class InformationActivity : AppCompatActivity() {
@@ -16,10 +17,9 @@ class InformationActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
         val imageView = findViewById<ImageView>(R.id.photo_holder)
-        val byteArray = intent.getByteArrayExtra("image")
-//        var image = BitmapFactory.decodeByteArray(byteArray, 0, byteArray!!.size)
-//
-//        imageView.setImageBitmap(image)
+        val uri = intent.getStringExtra("URI")
+        imageView.setImageURI(Uri.parse(uri))
+
     }
 
 

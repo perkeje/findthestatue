@@ -52,6 +52,15 @@
         android:src="@drawable/ic_history"
         android:background="@drawable/round_corners_button"/>
 
+    <ImageButton
+        android:id="@+id/set_flash_btn"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_margin="30dp"
+        android:background="@drawable/round_button"
+        android:src="@drawable/ic_auto_flash"/>
 
     <View
         android:id="@+id/focus_rect"

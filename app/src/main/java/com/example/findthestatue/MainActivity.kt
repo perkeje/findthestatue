@@ -1,6 +1,7 @@
 package com.example.findthestatue
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,8 +12,8 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.widget.ImageButton
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -27,8 +28,6 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
-
-
     private lateinit var viewBinding: ActivityMainBinding
 
     private var imageCapture: ImageCapture? = null
@@ -37,14 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var file: File
 
-    private lateinit var cameraControl: CameraControl
-    private lateinit var cameraInfo : CameraInfo
+    private lateinit var camera : Camera
 
-    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback{
-        if(it != null) startInfo(it.toString())
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) {
+        if (it != null) startInfo(it.toString())
 
-    })
+    }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
@@ -67,7 +66,9 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-
+        viewBinding.setFlashBtn.setOnClickListener{
+            setFlash(viewBinding.setFlashBtn)
+        }
 
         viewBinding.addPhotoBtn.setOnClickListener{
             pickImage.launch("image/*")
@@ -82,11 +83,11 @@ class MainActivity : AppCompatActivity() {
 
         val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-                val currentZoomRatio = cameraInfo.zoomState.value?.zoomRatio ?: 0F
+                val currentZoomRatio = camera.cameraInfo.zoomState.value?.zoomRatio ?: 0F
 
                 val delta = detector.scaleFactor
 
-                cameraControl.setZoomRatio(currentZoomRatio * delta)
+                camera.cameraControl.setZoomRatio(currentZoomRatio * delta)
 
                 return true
             }
@@ -110,14 +111,13 @@ class MainActivity : AppCompatActivity() {
                     focusRectangleView.y =y-(focusRectangleView.height/2)
                     val action = FocusMeteringAction.Builder(point).build()
 
-                    cameraControl.startFocusAndMetering(action)
+                    camera.cameraControl.startFocusAndMetering(action)
                     rectangleDelay(handler,visibilityDelay)
 
                     return@setOnTouchListener true
                 }
                 else -> return@setOnTouchListener false
             }
-            return@setOnTouchListener true
         }
 
 
@@ -164,19 +164,17 @@ class MainActivity : AppCompatActivity() {
                 .also {
                     it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
-            imageCapture = ImageCapture.Builder().build()
-
+            imageCapture = ImageCapture.Builder().setFlashMode(ImageCapture.FLASH_MODE_AUTO).build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
 
                 cameraProvider.unbindAll()
 
-                val camera = cameraProvider.bindToLifecycle(
+                 camera = cameraProvider.bindToLifecycle(
                     this, cameraSelector, preview,imageCapture)
 
-                cameraControl = camera.cameraControl
-                cameraInfo = camera.cameraInfo
+
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -227,7 +225,22 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-
+    private fun setFlash(btn:ImageButton){
+        when(imageCapture?.flashMode){
+            ImageCapture.FLASH_MODE_AUTO -> {
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_ON
+                btn.setImageResource(R.drawable.ic_flash_on)
+            }
+            ImageCapture.FLASH_MODE_ON -> {
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
+                btn.setImageResource(R.drawable.ic_flash_off)
+            }
+            ImageCapture.FLASH_MODE_OFF -> {
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
+                btn.setImageResource(R.drawable.ic_auto_flash)
+            }
+        }
+    }
 
     private fun startInfo(URI : String){
         val informationIntent = Intent(this, InformationActivity::class.java)

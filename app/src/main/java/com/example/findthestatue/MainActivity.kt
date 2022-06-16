@@ -1,38 +1,34 @@
 package com.example.findthestatue
 
 import android.Manifest
-import android.app.Activity
-import android.app.Instrumentation
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.provider.MediaStore
 import android.util.Log
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
-import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.example.findthestatue.databinding.ActivityMainBinding
 import java.io.File
-import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 
 class MainActivity : AppCompatActivity() {
+
+
+
     private lateinit var viewBinding: ActivityMainBinding
 
     private var imageCapture: ImageCapture? = null
@@ -42,8 +38,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var file: File
 
     private lateinit var cameraControl: CameraControl
+    private lateinit var cameraInfo : CameraInfo
 
-    val pickImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback{
+    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent(), ActivityResultCallback{
         if(it != null) startInfo(it.toString())
 
     })
@@ -52,10 +49,14 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
+
         val previewView = viewBinding.viewFinder
         val focusRectangleView = viewBinding.focusRect
-        rectangleDelay(focusRectangleView)
 
+        val visibilityDelay = Runnable { focusRectangleView.visibility = View.GONE }
+        val handler = Handler(Looper.getMainLooper())
+
+        rectangleDelay(handler,visibilityDelay)
         openAndClearCache()
 
         if (allPermissionsGranted()) {
@@ -64,6 +65,8 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(
                 this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
         }
+
+
 
 
         viewBinding.addPhotoBtn.setOnClickListener{
@@ -76,28 +79,47 @@ class MainActivity : AppCompatActivity() {
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        viewBinding.viewFinder.setOnTouchListener(View.OnTouchListener setOnTouchListener@{ view: View, motionEvent: MotionEvent ->
-            when (motionEvent.action) {
-                MotionEvent.ACTION_DOWN -> return@setOnTouchListener true
-                MotionEvent.ACTION_UP -> {
-                    val factory = previewView.getMeteringPointFactory()
 
-                    val x =motionEvent.x
-                    val y = motionEvent.y
+        val listener = object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                val currentZoomRatio = cameraInfo.zoomState.value?.zoomRatio ?: 0F
+
+                val delta = detector.scaleFactor
+
+                cameraControl.setZoomRatio(currentZoomRatio * delta)
+
+                return true
+            }
+        }
+        val scaleGestureDetector = ScaleGestureDetector(this, listener)
+
+        previewView.setOnTouchListener { _, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    return@setOnTouchListener true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val factory = previewView.meteringPointFactory
+
+                    val x =event.x
+                    val y = event.y
                     val point = factory.createPoint(x, y)
                     focusRectangleView.visibility = View.VISIBLE
-                    focusRectangleView.x= x
-                    focusRectangleView.y =y
+                    focusRectangleView.x= x-(focusRectangleView.width/2)
+                    focusRectangleView.y =y-(focusRectangleView.height/2)
                     val action = FocusMeteringAction.Builder(point).build()
 
                     cameraControl.startFocusAndMetering(action)
-                    rectangleDelay(focusRectangleView)
+                    rectangleDelay(handler,visibilityDelay)
 
                     return@setOnTouchListener true
                 }
                 else -> return@setOnTouchListener false
             }
-        })
+            return@setOnTouchListener true
+        }
+
 
     }
 
@@ -154,6 +176,7 @@ class MainActivity : AppCompatActivity() {
                     this, cameraSelector, preview,imageCapture)
 
                 cameraControl = camera.cameraControl
+                cameraInfo = camera.cameraInfo
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -191,7 +214,6 @@ class MainActivity : AppCompatActivity() {
     }
     companion object {
         private const val TAG = "FindTheStatue"
-        private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val FILENAME = "appPrivate"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
@@ -203,6 +225,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }.toTypedArray()
     }
+
+
+
 
     private fun startInfo(URI : String){
         val informationIntent = Intent(this, InformationActivity::class.java)
@@ -216,10 +241,11 @@ class MainActivity : AppCompatActivity() {
         file.delete()
     }
 
-    private fun rectangleDelay(rectView : View){
-        Handler(Looper.getMainLooper()).postDelayed({
-            rectView.visibility=View.GONE
-        }, 1000)
+    private fun rectangleDelay(handler: Handler,runnable: Runnable){
+        handler.removeCallbacks(runnable)
+        handler.postDelayed(runnable,
+            1000)
     }
+
 
 }

@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Log
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.Surface
 import android.view.View
 import android.widget.ImageButton
 import android.widget.Toast
@@ -22,6 +23,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.findthestatue.databinding.ActivityMainBinding
 import java.io.File
+import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -39,7 +41,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var camera : Camera
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) {
-        if (it != null) startInfo(it.toString())
+        if (it != null){
+            startInfo(it.toString(),"galery")
+        }
 
     }
 
@@ -143,10 +147,10 @@ class MainActivity : AppCompatActivity() {
 
                 override fun
                         onImageSaved(output: ImageCapture.OutputFileResults){
-                    val msg = "Photo capture succeeded, processing..."
+                    val msg = "Processing..."
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
-                    startInfo(file.absolutePath)
+                    startInfo(file.absolutePath,"camera")
                 }
             }
         )
@@ -242,9 +246,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startInfo(URI : String){
+    private fun startInfo(URI : String,taken:String){
         val informationIntent = Intent(this, InformationActivity::class.java)
         informationIntent.putExtra("URI", URI)
+        informationIntent.putExtra("picTaken",taken)
         startActivity(informationIntent)
     }
 

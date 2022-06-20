@@ -10,13 +10,20 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
+import android.view.MotionEvent
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.recyclerview.widget.RecyclerView
 import com.example.findthestatue.ml.StatueRecognizerv01
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -27,16 +34,19 @@ import java.nio.ByteBuffer
 
 
 class InformationActivity : AppCompatActivity() {
-    private val names = arrayOf("Blažena Djevica Marija", "Kip Svetog Trojstva", "Sv. Franjo Ksaverski", "Sv. Ignacije Loyola", "Sv. Ivan Nepomuk", "Sv. Josip", "Sv. Katarina Aleksandrijska", "Sv. Rok", "Sv. Sebastijan")
+    private  lateinit var description:TextView
+    private  lateinit var title:TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
         val imageView = findViewById<ImageView>(R.id.photo_holder)
         val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
-        val description = findViewById<TextView>(R.id.description)
-        val title = findViewById<TextView>(R.id.name)
+        description = findViewById<TextView>(R.id.description)
+        title = findViewById<TextView>(R.id.name)
         val uri = intent.getStringExtra("URI")
         var bitmap:Bitmap
+
          if(intent.getStringExtra("picTaken") == "camera") {
             bitmap = BitmapFactory.decodeFile(uri )
             val matix = Matrix()
@@ -48,8 +58,7 @@ class InformationActivity : AppCompatActivity() {
         }
 
         imageView.setImageURI(Uri.parse(uri))
-        val index = classifyImage(bitmap)
-        title.text = names[index]
+        setText(classifyImage(bitmap))
         val bottomSheetBehaviour = BottomSheetBehavior.from(bottomSheet).apply {
             peekHeight = 400
             this.state = BottomSheetBehavior.STATE_COLLAPSED
@@ -59,6 +68,9 @@ class InformationActivity : AppCompatActivity() {
             if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_COLLAPSED) bottomSheetBehaviour.state = BottomSheetBehavior.STATE_EXPANDED
         }
 
+        imageView.setOnClickListener{
+            if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_EXPANDED) bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
 
 
 
@@ -86,11 +98,27 @@ class InformationActivity : AppCompatActivity() {
         val confidences = outputFeature0.floatArray
 
         val maxIdx = confidences.indices.maxBy { confidences[it] }
-
+        Log.d("Confidence","${confidences[maxIdx]}")
         model.close()
         return maxIdx
     }
 
+    private fun setText(index : Int){
+        val database = Firebase.database
+        val myRef = database.getReference("/")
+
+
+        myRef.child(index.toString()).child("name").get().addOnSuccessListener {
+            title.text = it.value.toString()
+        }.addOnFailureListener{
+            Log.e("firebase", "Error getting data", it)
+        }
+        myRef.child(index.toString()).child("description").get().addOnSuccessListener {
+            description.text = it.value.toString()
+        }.addOnFailureListener{
+            Log.e("firebase", "Error getting data", it)
+        }
+    }
 
 private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
     val bitmap = when {

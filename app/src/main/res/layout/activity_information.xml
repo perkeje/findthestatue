@@ -19,7 +19,6 @@ tools:context=".InformationActivity">
         android:layout_height="wrap_content"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         android:background="@drawable/round_corner_bottomsheet"
-
         >
 
         <ImageView
@@ -53,18 +52,33 @@ tools:context=".InformationActivity">
             app:layout_constraintEnd_toEndOf="@+id/bottom_sheet_layout"
             android:layout_margin="20dp"/>
 
-        <TextView
-            android:id="@+id/description"
+
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="500dp"
             android:layout_margin="20dp"
             android:scrollbars="vertical"
-            android:text="@string/blank_description"
-            android:textColor="@color/third_color"
-            android:textSize="20sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/baseline" />
+            app:layout_constraintTop_toBottomOf="@+id/baseline"
+            android:nestedScrollingEnabled="true"
+            >
+
+            <TextView
+                android:id="@+id/description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="vertical"
+                android:text="@string/blank_description"
+                android:textColor="@color/third_color"
+                android:textSize="20sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="parent"
+
+                />
+        </ScrollView>
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

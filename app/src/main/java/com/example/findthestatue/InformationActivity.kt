@@ -19,6 +19,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.findthestatue.ml.StatueRecognizerv01
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.database.FirebaseDatabase
@@ -31,27 +32,31 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.nio.ByteBuffer
+import com.bumptech.glide.annotation.GlideModule;
+import com.bumptech.glide.module.AppGlideModule;
 
 
 class InformationActivity : AppCompatActivity() {
     private  lateinit var description:TextView
     private  lateinit var title:TextView
+    private lateinit var  controlImg:ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
         val imageView = findViewById<ImageView>(R.id.photo_holder)
         val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
-        description = findViewById<TextView>(R.id.description)
-        title = findViewById<TextView>(R.id.name)
+        description = findViewById(R.id.description)
+        title = findViewById(R.id.name)
+        controlImg = findViewById(R.id.control_img)
         val uri = intent.getStringExtra("URI")
         var bitmap:Bitmap
 
          if(intent.getStringExtra("picTaken") == "camera") {
             bitmap = BitmapFactory.decodeFile(uri )
-            val matix = Matrix()
-            matix.postRotate(90F)
-            bitmap =  Bitmap.createBitmap(bitmap,0,0,bitmap.width,bitmap.height,matix,true)
+            val matrix = Matrix()
+            matrix.postRotate(90F)
+            bitmap =  Bitmap.createBitmap(bitmap,0,0,bitmap.width,bitmap.height,matrix,true)
         }
         else {
             bitmap = getCapturedImage(Uri.parse(uri))
@@ -59,6 +64,7 @@ class InformationActivity : AppCompatActivity() {
 
         imageView.setImageURI(Uri.parse(uri))
         setText(classifyImage(bitmap))
+        controlImg.setImageURI(Uri.parse(uri))
         val bottomSheetBehaviour = BottomSheetBehavior.from(bottomSheet).apply {
             peekHeight = 400
             this.state = BottomSheetBehavior.STATE_COLLAPSED
@@ -115,6 +121,13 @@ class InformationActivity : AppCompatActivity() {
         }
         myRef.child(index.toString()).child("description").get().addOnSuccessListener {
             description.text = it.value.toString()
+        }.addOnFailureListener{
+            Log.e("firebase", "Error getting data", it)
+        }
+        myRef.child(index.toString()).child("img").get().addOnSuccessListener {
+            Glide.with(this)
+                .load(it.value.toString())
+                .into(controlImg)
         }.addOnFailureListener{
             Log.e("firebase", "Error getting data", it)
         }

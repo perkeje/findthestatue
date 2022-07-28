@@ -80,7 +80,7 @@ tools:context=".InformationActivity">
                     />
                 <ImageView
                     android:id="@+id/control_img"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_alignParentBottom="true"
                     app:layout_constraintStart_toStartOf="parent"

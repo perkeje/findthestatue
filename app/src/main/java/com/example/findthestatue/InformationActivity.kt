@@ -1,39 +1,32 @@
 package com.example.findthestatue
 
-
+import android.content.ContentValues.TAG
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
-import android.icu.text.CaseMap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.text.method.ScrollingMovementMethod
 import android.util.Log
-import android.view.MotionEvent
-import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.findthestatue.ml.StatueRecognizerv01
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.support.common.ops.NormalizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import java.nio.ByteBuffer
-import com.bumptech.glide.annotation.GlideModule;
-import com.bumptech.glide.module.AppGlideModule;
+import com.google.gson.Gson
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okio.IOException
+import org.json.JSONException
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 
 class InformationActivity : AppCompatActivity() {
@@ -63,8 +56,36 @@ class InformationActivity : AppCompatActivity() {
         }
 
         imageView.setImageURI(Uri.parse(uri))
-        setText(classifyImage(bitmap))
-        controlImg.setImageURI(Uri.parse(uri))
+
+        val request = createRESTRequest(bitmap)
+
+        val thread = Thread {
+            try {
+                var client = OkHttpClient.Builder()
+                    .connectTimeout(20, TimeUnit.SECONDS)
+                    .writeTimeout(20, TimeUnit.SECONDS)
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .callTimeout(20, TimeUnit.SECONDS)
+                    .build()
+                val response = client.newCall(request).execute()
+                val string = response.body!!.string()
+                val responseObject = JSONObject(string)
+                val predictionsArray = responseObject.getJSONArray("predictions")
+                val predictions = Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
+                val maxIdx = predictions.indices.maxBy { predictions[it] }
+                Log.d("Confidence","${predictions[maxIdx]}")
+                setText(maxIdx)
+            } catch (e: IOException) {
+                Log.e(TAG, e.message!!)
+
+            } catch (e: JSONException) {
+                Log.e(TAG, e.message!!)
+
+            }
+        }
+
+        thread.start()
+
         val bottomSheetBehaviour = BottomSheetBehavior.from(bottomSheet).apply {
             peekHeight = 400
             this.state = BottomSheetBehavior.STATE_COLLAPSED
@@ -78,35 +99,6 @@ class InformationActivity : AppCompatActivity() {
             if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_EXPANDED) bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
         }
 
-
-
-    }
-    private fun classifyImage(image: Bitmap): Int{
-        val bmp = image.copy(Bitmap.Config.ARGB_8888, true)
-
-        val imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(224,224,ResizeOp.ResizeMethod.BILINEAR))
-            .add(NormalizeOp(0F,255F))
-            .build()
-
-        var tensorImg = TensorImage(DataType.FLOAT32)
-        tensorImg.load(bmp)
-        tensorImg = imageProcessor.process(tensorImg)
-
-        val model = StatueRecognizerv01.newInstance(applicationContext)
-
-        val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
-        inputFeature0.loadBuffer(tensorImg.buffer)
-
-        val outputs = model.process(inputFeature0)
-        val outputFeature0 = outputs.outputFeature0AsTensorBuffer
-
-        val confidences = outputFeature0.floatArray
-
-        val maxIdx = confidences.indices.maxBy { confidences[it] }
-        Log.d("Confidence","${confidences[maxIdx]}")
-        model.close()
-        return maxIdx
     }
 
     private fun setText(index : Int){
@@ -146,4 +138,53 @@ private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
     }
     return bitmap
 }
+
+    private fun createRESTRequest(inputImgBitmap: Bitmap): Request {
+        val inputImg = IntArray(INPUT_IMG_HEIGHT * INPUT_IMG_WIDTH)
+        val inputImgRGB = Array(1) {
+            Array(INPUT_IMG_HEIGHT) {
+                Array(INPUT_IMG_WIDTH) {
+                    IntArray(3)
+                }
+            }
+        }
+        inputImgBitmap.getPixels(
+            inputImg,
+            0,
+            INPUT_IMG_WIDTH,
+            0,
+            0,
+            INPUT_IMG_WIDTH,
+            INPUT_IMG_HEIGHT
+        )
+        var pixel: Int
+
+        for (i in 0 until INPUT_IMG_HEIGHT) {
+            for (j in 0 until INPUT_IMG_WIDTH) {
+                // Extract RBG values from each pixel; alpha is ignored
+                pixel = inputImg[i * INPUT_IMG_WIDTH + j]
+                inputImgRGB[0][i][j][0] = pixel shr 16 and 0xff
+                inputImgRGB[0][i][j][1] = pixel shr 8 and 0xff
+                inputImgRGB[0][i][j][2] = pixel and 0xff
+            }
+        }
+        val requestBody =
+            ("{\"instances\": " + inputImgRGB.contentDeepToString() + "}").toRequestBody(JSON)
+
+
+        return Request.Builder()
+            .url(URL)
+            .post(requestBody)
+            .build()
+    }
+
+    companion object {
+        private const val INPUT_IMG_HEIGHT = 256
+        private const val INPUT_IMG_WIDTH = 256
+        private const val URL = "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
+        private val JSON = "application/json; charset=utf-8".toMediaType()
+    }
+
 }
+
+

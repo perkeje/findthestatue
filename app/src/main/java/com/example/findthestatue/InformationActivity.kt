@@ -6,10 +6,13 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.net.Uri
+import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
+import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -33,12 +36,13 @@ class InformationActivity : AppCompatActivity() {
     private  lateinit var description:TextView
     private  lateinit var title:TextView
     private lateinit var  controlImg:ImageView
-
+    private lateinit var favouriteImg:ImageButton
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
         val imageView = findViewById<ImageView>(R.id.photo_holder)
         val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
+        favouriteImg = findViewById(R.id.favourite_btn)
         description = findViewById(R.id.description)
         title = findViewById(R.id.name)
         controlImg = findViewById(R.id.control_img)
@@ -53,12 +57,12 @@ class InformationActivity : AppCompatActivity() {
         }
         else {
             bitmap = getCapturedImage(Uri.parse(uri))
+             bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
         }
 
         imageView.setImageURI(Uri.parse(uri))
 
         val request = createRESTRequest(bitmap)
-
         val thread = Thread {
             try {
                 var client = OkHttpClient.Builder()
@@ -73,8 +77,10 @@ class InformationActivity : AppCompatActivity() {
                 val predictionsArray = responseObject.getJSONArray("predictions")
                 val predictions = Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
                 val maxIdx = predictions.indices.maxBy { predictions[it] }
-                Log.d("Confidence","${predictions[maxIdx]}")
-                setText(maxIdx)
+                this?.runOnUiThread{
+                    setText(maxIdx)
+                    favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                }
             } catch (e: IOException) {
                 Log.e(TAG, e.message!!)
 
@@ -97,6 +103,11 @@ class InformationActivity : AppCompatActivity() {
 
         imageView.setOnClickListener{
             if(bottomSheetBehaviour.state == BottomSheetBehavior.STATE_EXPANDED) bottomSheetBehaviour.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
+
+
+        favouriteImg.setOnClickListener{
+            favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
         }
 
     }
@@ -123,6 +134,7 @@ class InformationActivity : AppCompatActivity() {
         }.addOnFailureListener{
             Log.e("firebase", "Error getting data", it)
         }
+
     }
 
 private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
@@ -161,7 +173,6 @@ private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
 
         for (i in 0 until INPUT_IMG_HEIGHT) {
             for (j in 0 until INPUT_IMG_WIDTH) {
-                // Extract RBG values from each pixel; alpha is ignored
                 pixel = inputImg[i * INPUT_IMG_WIDTH + j]
                 inputImgRGB[0][i][j][0] = pixel shr 16 and 0xff
                 inputImgRGB[0][i][j][1] = pixel shr 8 and 0xff

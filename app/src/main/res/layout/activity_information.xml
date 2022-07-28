@@ -35,22 +35,40 @@ tools:context=".InformationActivity">
             android:id="@+id/name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="20dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="60dp"
             android:text="@string/blank_title"
             android:textColor="@color/third_color"
-            android:textSize="35sp"
+            android:textSize="32sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/collapse_btn" />
+
+
+        <ImageButton
+            android:id="@+id/favourite_btn"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginRight="10dp"
+            android:backgroundTint="@color/first_color"
+            android:clickable="false"
+            app:layout_constraintBottom_toBottomOf="@+id/name"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/name"
+            app:layout_constraintTop_toTopOf="@+id/name"
+            tools:ignore="SpeakableTextPresentCheck,SpeakableTextPresentCheck" />
+
         <View
             android:id="@+id/baseline"
             android:layout_width="300dp"
             android:layout_height="1dp"
+            android:layout_margin="20dp"
             android:background="@color/third_color"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/name"
             app:layout_constraintEnd_toEndOf="@+id/bottom_sheet_layout"
-            android:layout_margin="20dp"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/name" />
 
 
         <ScrollView

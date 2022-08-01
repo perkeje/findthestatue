@@ -49,10 +49,12 @@ tools:context=".InformationActivity">
 
         <ImageButton
             android:id="@+id/favourite_btn"
+            android:visibility="invisible"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_marginRight="10dp"
             android:backgroundTint="@color/first_color"
+            android:background="@drawable/round_button"
             android:clickable="false"
             app:layout_constraintBottom_toBottomOf="@+id/name"
             app:layout_constraintEnd_toEndOf="parent"

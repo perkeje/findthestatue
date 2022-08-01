@@ -124,6 +124,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        viewBinding.showHistoryBtn.setOnClickListener {
+            startHistory()
+        }
 
     }
 
@@ -251,6 +254,10 @@ class MainActivity : AppCompatActivity() {
         informationIntent.putExtra("URI", URI)
         informationIntent.putExtra("picTaken",taken)
         startActivity(informationIntent)
+    }
+    private fun startHistory(){
+        val historyIntent = Intent(this, HistoryActivity::class.java)
+        startActivity(historyIntent)
     }
 
     private fun openAndClearCache(){

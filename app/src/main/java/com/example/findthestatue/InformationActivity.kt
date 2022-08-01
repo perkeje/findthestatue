@@ -1,12 +1,12 @@
 package com.example.findthestatue
 
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
 import android.graphics.Matrix
 import android.net.Uri
-import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
@@ -22,6 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -29,7 +30,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okio.IOException
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 
 class InformationActivity : AppCompatActivity() {
@@ -48,6 +48,7 @@ class InformationActivity : AppCompatActivity() {
         controlImg = findViewById(R.id.control_img)
         val uri = intent.getStringExtra("URI")
         var bitmap:Bitmap
+        var maxIdx = -1
 
          if(intent.getStringExtra("picTaken") == "camera") {
             bitmap = BitmapFactory.decodeFile(uri )
@@ -64,22 +65,24 @@ class InformationActivity : AppCompatActivity() {
 
         val request = createRESTRequest(bitmap)
         val thread = Thread {
+            val client = OkHttpClient()
             try {
-                var client = OkHttpClient.Builder()
-                    .connectTimeout(20, TimeUnit.SECONDS)
-                    .writeTimeout(20, TimeUnit.SECONDS)
-                    .readTimeout(20, TimeUnit.SECONDS)
-                    .callTimeout(20, TimeUnit.SECONDS)
-                    .build()
                 val response = client.newCall(request).execute()
-                val string = response.body!!.string()
-                val responseObject = JSONObject(string)
+                val json = response.body!!.string()
+                val responseObject = JSONObject(json)
                 val predictionsArray = responseObject.getJSONArray("predictions")
                 val predictions = Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
-                val maxIdx = predictions.indices.maxBy { predictions[it] }
-                this?.runOnUiThread{
+                maxIdx = predictions.indices.maxBy { predictions[it] }
+                this.runOnUiThread{
                     setText(maxIdx)
-                    favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                    val favourites = getArrayList()
+                    if (favourites != null && favourites.contains(maxIdx)) {
+                        favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+                    }
+                    else{
+                        favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                    }
+                    favouriteImg.visibility = View.VISIBLE
                 }
             } catch (e: IOException) {
                 Log.e(TAG, e.message!!)
@@ -107,9 +110,26 @@ class InformationActivity : AppCompatActivity() {
 
 
         favouriteImg.setOnClickListener{
-            favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+            var favourites = getArrayList()
+            if (favourites != null) {
+                if(favourites.contains(maxIdx)){
+                    favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                    favourites.remove(maxIdx)
+                    saveArrayList(favourites)
+            }
+                else{
+                    favourites.add(maxIdx)
+                    favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+                    saveArrayList(favourites)
+                }
+            }
+            else{
+                favourites = ArrayList()
+                favourites.add(maxIdx)
+                favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+                saveArrayList(favourites)
+            }
         }
-
     }
 
     private fun setText(index : Int){
@@ -194,6 +214,24 @@ private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
         private const val INPUT_IMG_WIDTH = 256
         private const val URL = "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
         private val JSON = "application/json; charset=utf-8".toMediaType()
+    }
+
+    private fun saveArrayList(list: ArrayList<Int?>?) {
+        val prefs = this.getSharedPreferences("saved",Context.MODE_PRIVATE)
+        val gson = Gson()
+        val dist = list?.distinct()
+        val json = gson.toJson(dist)
+        prefs.edit()
+            .putString("saved",json)
+            .apply()
+    }
+
+    private fun getArrayList():ArrayList<Int?>?{
+        val prefs = this.getSharedPreferences("saved",Context.MODE_PRIVATE)
+        val gson = Gson()
+        val json = prefs.getString("saved",null)
+        val type= object : TypeToken<ArrayList<Int?>?>() {}.type
+        return gson.fromJson(json,type)
     }
 
 }

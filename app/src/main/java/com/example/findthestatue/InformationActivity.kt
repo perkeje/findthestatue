@@ -23,10 +23,12 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import okio.IOException
 import org.json.JSONException
 import org.json.JSONObject
@@ -37,11 +39,13 @@ class InformationActivity : AppCompatActivity() {
     private  lateinit var title:TextView
     private lateinit var  controlImg:ImageView
     private lateinit var favouriteImg:ImageButton
+    private lateinit var call: Call
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
         val imageView = findViewById<ImageView>(R.id.photo_holder)
         val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
+        val backBtn = findViewById<ImageButton>(R.id.back_btn)
         favouriteImg = findViewById(R.id.favourite_btn)
         description = findViewById(R.id.description)
         title = findViewById(R.id.name)
@@ -67,8 +71,10 @@ class InformationActivity : AppCompatActivity() {
         val thread = Thread {
             val client = OkHttpClient()
             try {
-                val response = client.newCall(request).execute()
+                call = client.newCall(request)
+                val response = call.execute()
                 val json = response.body!!.string()
+                response.close()
                 val responseObject = JSONObject(json)
                 val predictionsArray = responseObject.getJSONArray("predictions")
                 val predictions = Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
@@ -129,6 +135,17 @@ class InformationActivity : AppCompatActivity() {
                 favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
                 saveArrayList(favourites)
             }
+        }
+        backBtn.setOnClickListener {
+            onBackPressed()
+        }
+
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (call != null){
+            call.cancel()
         }
     }
 

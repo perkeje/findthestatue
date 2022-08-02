@@ -40,6 +40,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var camera : Camera
 
+    private val prefs = Prefs()
+
+
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) {
         if (it != null){
             startInfo(it.toString(),"galery")
@@ -171,7 +174,7 @@ class MainActivity : AppCompatActivity() {
                 .also {
                     it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
-            imageCapture = ImageCapture.Builder().setFlashMode(ImageCapture.FLASH_MODE_AUTO).build()
+            imageCapture = ImageCapture.Builder().setFlashMode(prefs.getFlash(this)).build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {

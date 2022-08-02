@@ -3,6 +3,7 @@ package com.example.findthestatue
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.ImageButton
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -14,15 +15,18 @@ class HistoryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_history)
         historyAdapter = HistoryRecyclerAdapter()
-        val list = getArrayList()?.toList()
+        val backBtn = findViewById<ImageButton>(R.id.back_btn)
+        val list = getArrayList()
         if (list==null){
             historyAdapter.postItemsList(ArrayList())
         }
-        else{
-            historyAdapter.postItemsList(list as ArrayList<Int>)
-        }
+        else historyAdapter.postItemsList(list as ArrayList<Int>)
 
         initView()
+
+        backBtn.setOnClickListener {
+            onBackPressed()
+        }
     }
     private fun initView() {
         findViewById<RecyclerView>(R.id.items_list).apply {

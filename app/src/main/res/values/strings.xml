@@ -3,4 +3,5 @@
     <string name="take_photo">Take Photo</string>
     <string name="blank_title">Prepoznajem sliku…</string>
     <string name="blank_description">Provjeravam rezultat… Ako zahtjev traje predugo provjerite internet vezu.</string>
+    <string name="loading">Učitavam...</string>
 </resources>

@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_marginTop="20dp">
 
     <ImageView
         android:id="@+id/statuePhoto"
@@ -15,12 +16,23 @@
 
     <TextView
         android:id="@+id/statueName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="193dp"
+        android:layout_height="99dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="15dp"
+        android:text="@string/loading"
         android:textSize="23sp"
-        android:text="Text View"
         app:layout_constraintStart_toEndOf="@+id/statuePhoto"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/rm_btn"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="@drawable/round_button"
+        android:src="@drawable/remove_favourites"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/statueName"
         app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

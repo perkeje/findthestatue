@@ -54,11 +54,18 @@ class HistoryRecyclerAdapter:
             itemView.findViewById(R.id.statuePhoto)
         private val statueName: TextView =
             itemView.findViewById(R.id.statueName)
+        private val statueDescription: TextView =
+            itemView.findViewById(R.id.statue_description)
         private lateinit var adapter :HistoryRecyclerAdapter;
         fun bind(item: Int,myRef:DatabaseReference) {
 
             myRef.child(item.toString()).child("name").get().addOnSuccessListener {
                 statueName.text = it.value.toString()
+            }.addOnFailureListener{
+                Log.e("firebase", "Error getting data", it)
+            }
+            myRef.child(item.toString()).child("description").get().addOnSuccessListener {
+                statueDescription.text = it.value.toString()
             }.addOnFailureListener{
                 Log.e("firebase", "Error getting data", it)
             }
@@ -72,16 +79,24 @@ class HistoryRecyclerAdapter:
                 Log.e("firebase", "Error getting data", it)
             }
 
+
             itemView.findViewById<ImageButton>(R.id.rm_btn).setOnClickListener {
                 val prefs = Prefs()
                 adapter.removeAt(adapterPosition)
                 var list = prefs.getArrayList(itemView.context)
                 list?.remove(item)
                 prefs.saveArrayList(list,itemView.context)
-
-
+            }
+            this.itemView.setOnClickListener{
+                if (statueDescription.visibility == View.GONE) {
+                    statueDescription.visibility = View.VISIBLE
+                }
+                else{
+                    statueDescription.visibility = View.GONE
+                }
             }
         }
+
         fun linkAdapter(adapter: HistoryRecyclerAdapter):StatueViewHolder{
             this.adapter=adapter
             return this

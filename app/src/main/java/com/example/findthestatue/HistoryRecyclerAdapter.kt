@@ -5,14 +5,18 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Animation
+import android.view.animation.Transformation
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
+
 
 class HistoryRecyclerAdapter:
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -44,7 +48,6 @@ class HistoryRecyclerAdapter:
     fun removeAt(position: Int) {
         items.removeAt(position)
         notifyItemRemoved(position)
-        notifyItemRangeChanged(position,items.size)
     }
 
     class StatueViewHolder constructor(
@@ -56,7 +59,10 @@ class HistoryRecyclerAdapter:
             itemView.findViewById(R.id.statueName)
         private val statueDescription: TextView =
             itemView.findViewById(R.id.statue_description)
+        private val descriptionLayout: ConstraintLayout =
+            itemView.findViewById(R.id.description_layout)
         private lateinit var adapter :HistoryRecyclerAdapter;
+
         fun bind(item: Int,myRef:DatabaseReference) {
 
             myRef.child(item.toString()).child("name").get().addOnSuccessListener {
@@ -88,11 +94,11 @@ class HistoryRecyclerAdapter:
                 prefs.saveArrayList(list,itemView.context)
             }
             this.itemView.setOnClickListener{
-                if (statueDescription.visibility == View.GONE) {
-                    statueDescription.visibility = View.VISIBLE
+                if (descriptionLayout.visibility == View.GONE) {
+                    expand(descriptionLayout)
                 }
                 else{
-                    statueDescription.visibility = View.GONE
+                    collapse(descriptionLayout)
                 }
             }
         }
@@ -102,4 +108,44 @@ class HistoryRecyclerAdapter:
             return this
         }
     }
+}
+
+
+fun expand(view: View) {
+    val animation = expandAction(view)
+    view.startAnimation(animation)
+}
+
+private fun expandAction(view: View): Animation {
+    view.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    val actualheight = view.measuredHeight
+    view.layoutParams.height = 0
+    view.visibility = View.VISIBLE
+    val animation: Animation = object : Animation() {
+        override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
+            view.layoutParams.height =
+                if (interpolatedTime == 1f) ViewGroup.LayoutParams.WRAP_CONTENT
+                else (actualheight * interpolatedTime).toInt()
+            view.requestLayout()
+        }
+    }
+    animation.duration = ((actualheight / view.context.resources.displayMetrics.density)).toLong()
+    view.startAnimation(animation)
+    return animation
+}
+
+fun collapse(view: View) {
+    val actualHeight = view.measuredHeight
+    val animation: Animation = object : Animation() {
+        override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
+            if (interpolatedTime == 1f) {
+                view.visibility = View.GONE
+            } else {
+                view.layoutParams.height = actualHeight - (actualHeight * interpolatedTime).toInt()
+                view.requestLayout()
+            }
+        }
+    }
+    animation.duration = ((actualHeight / view.context.resources.displayMetrics.density)/2.5 ).toLong()
+    view.startAnimation(animation)
 }

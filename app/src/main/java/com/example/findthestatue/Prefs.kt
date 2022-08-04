@@ -1,6 +1,9 @@
 package com.example.findthestatue
 
 import android.content.Context
+import android.os.Build
+import android.view.Window
+import android.view.WindowManager
 import androidx.camera.core.ImageCapture
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -33,5 +36,11 @@ class Prefs {
     fun getFlash(context: Context):Int{
         val prefs = context.getSharedPreferences("flash", Context.MODE_PRIVATE)
         return prefs.getInt("flash", ImageCapture.FLASH_MODE_AUTO)
+    }
+
+    fun setView(window: Window){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+            window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        }
     }
 }

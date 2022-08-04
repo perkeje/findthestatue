@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-tools:context=".InformationActivity">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".InformationActivity"
+    android:background="@color/cardview_dark_background">
 
 
     <ImageView
@@ -18,8 +19,18 @@ tools:context=".InformationActivity">
         android:layout_height="50dp"
         android:src="@drawable/back_img_foreground"
         android:background="@drawable/round_button"
-        android:layout_marginTop="30dp"
+        android:layout_marginTop="50dp"
         android:layout_marginStart="30dp"/>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_anchor="@+id/photo_holder"
+        app:layout_anchorGravity="center"
+        android:layout_gravity="center"
+        />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottom_sheet_layout"
@@ -27,6 +38,7 @@ tools:context=".InformationActivity">
         android:layout_height="wrap_content"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
         android:background="@drawable/round_corner_bottomsheet"
+        android:visibility="gone"
         >
 
         <ImageView
@@ -125,6 +137,8 @@ tools:context=".InformationActivity">
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

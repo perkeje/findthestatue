@@ -14,6 +14,7 @@ import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -40,12 +41,17 @@ class InformationActivity : AppCompatActivity() {
     private lateinit var  controlImg:ImageView
     private lateinit var favouriteImg:ImageButton
     private lateinit var call: Call
+    private val prefs = Prefs()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
+
+        prefs.setView(window)
+
         val imageView = findViewById<ImageView>(R.id.photo_holder)
         val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
         val backBtn = findViewById<ImageButton>(R.id.back_btn)
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         favouriteImg = findViewById(R.id.favourite_btn)
         description = findViewById(R.id.description)
         title = findViewById(R.id.name)
@@ -81,6 +87,8 @@ class InformationActivity : AppCompatActivity() {
                 maxIdx = predictions.indices.maxBy { predictions[it] }
                 this.runOnUiThread{
                     setText(maxIdx)
+                    progressBar.visibility=View.GONE
+                    bottomSheet.visibility = View.VISIBLE
                     val favourites = getArrayList()
                     if (favourites != null && favourites.contains(maxIdx)) {
                         favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)

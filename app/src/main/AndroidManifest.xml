@@ -19,12 +19,9 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_icon_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FindTheStatue">
+        android:theme="@style/Theme.FindTheStatue.NoActionBarAndStatusBar">
         <activity
             android:name=".HistoryActivity"
-            android:exported="false" />
-        <activity
-            android:name=".HistoryRecyclerAdapter"
             android:exported="false" />
         <activity
             android:name=".InformationActivity"

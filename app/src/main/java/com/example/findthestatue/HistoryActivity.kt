@@ -11,9 +11,12 @@ import com.google.gson.reflect.TypeToken
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var historyAdapter: HistoryRecyclerAdapter
+    private val prefs = Prefs()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_history)
+
+        prefs.setView(window)
         historyAdapter = HistoryRecyclerAdapter()
         val backBtn = findViewById<ImageButton>(R.id.back_btn)
         val list = getArrayList()

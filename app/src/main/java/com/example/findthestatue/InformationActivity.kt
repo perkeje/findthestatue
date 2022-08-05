@@ -1,7 +1,6 @@
 package com.example.findthestatue
 
 import android.content.ContentValues.TAG
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -23,13 +22,11 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
 import okio.IOException
 import org.json.JSONException
 import org.json.JSONObject
@@ -89,7 +86,7 @@ class InformationActivity : AppCompatActivity() {
                     setText(maxIdx)
                     progressBar.visibility=View.GONE
                     bottomSheet.visibility = View.VISIBLE
-                    val favourites = getArrayList()
+                    val favourites = prefs.getArrayList(this)
                     if (favourites != null && favourites.contains(maxIdx)) {
                         favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
                     }
@@ -124,24 +121,24 @@ class InformationActivity : AppCompatActivity() {
 
 
         favouriteImg.setOnClickListener{
-            var favourites = getArrayList()
+            var favourites = prefs.getArrayList(this)
             if (favourites != null) {
                 if(favourites.contains(maxIdx)){
                     favouriteImg.setImageResource(R.drawable.favourite_foreground)
                     favourites.remove(maxIdx)
-                    saveArrayList(favourites)
+                    prefs.saveArrayList(favourites,this)
             }
                 else{
                     favourites.add(maxIdx)
                     favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                    saveArrayList(favourites)
+                    prefs.saveArrayList(favourites,this)
                 }
             }
             else{
                 favourites = ArrayList()
                 favourites.add(maxIdx)
                 favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                saveArrayList(favourites)
+                prefs.saveArrayList(favourites,this)
             }
         }
         backBtn.setOnClickListener {
@@ -152,9 +149,8 @@ class InformationActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        if (call != null){
-            call.cancel()
-        }
+        call.cancel()
+
     }
 
     private fun setText(index : Int){
@@ -239,24 +235,6 @@ private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
         private const val INPUT_IMG_WIDTH = 256
         private const val URL = "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
         private val JSON = "application/json; charset=utf-8".toMediaType()
-    }
-
-    private fun saveArrayList(list: ArrayList<Int?>?) {
-        val prefs = this.getSharedPreferences("saved",Context.MODE_PRIVATE)
-        val gson = Gson()
-        val dist = list?.distinct()
-        val json = gson.toJson(dist)
-        prefs.edit()
-            .putString("saved",json)
-            .apply()
-    }
-
-    private fun getArrayList():ArrayList<Int?>?{
-        val prefs = this.getSharedPreferences("saved",Context.MODE_PRIVATE)
-        val gson = Gson()
-        val json = prefs.getString("saved",null)
-        val type= object : TypeToken<ArrayList<Int?>?>() {}.type
-        return gson.fromJson(json,type)
     }
 
 }

@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
 
         rectangleDelay(handler,visibilityDelay)
         openAndClearCache()
+        setFlash(viewBinding.setFlashBtn,prefs.getFlash(this))
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -73,7 +74,7 @@ class MainActivity : AppCompatActivity() {
 
 
         viewBinding.setFlashBtn.setOnClickListener{
-            setFlash(viewBinding.setFlashBtn)
+            changeFlash(viewBinding.setFlashBtn)
         }
 
         viewBinding.addPhotoBtn.setOnClickListener{
@@ -232,19 +233,36 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun setFlash(btn:ImageButton){
+    private fun changeFlash(btn:ImageButton){
+        var mode = ImageCapture.FLASH_MODE_AUTO
         when(imageCapture?.flashMode){
             ImageCapture.FLASH_MODE_AUTO -> {
+                mode = ImageCapture.FLASH_MODE_ON
+            }
+            ImageCapture.FLASH_MODE_ON -> {
+                mode = ImageCapture.FLASH_MODE_OFF
+            }
+            ImageCapture.FLASH_MODE_OFF -> {
+                mode = ImageCapture.FLASH_MODE_AUTO
+            }
+        }
+        setFlash(btn,mode)
+        prefs.saveFlash(this,mode)
+    }
+
+    private fun setFlash(btn:ImageButton,mode: Int){
+        when(mode){
+            ImageCapture.FLASH_MODE_AUTO -> {
+                imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
+                btn.setImageResource(R.drawable.ic_auto_flash)
+            }
+            ImageCapture.FLASH_MODE_ON -> {
                 imageCapture?.flashMode = ImageCapture.FLASH_MODE_ON
                 btn.setImageResource(R.drawable.ic_flash_on)
             }
-            ImageCapture.FLASH_MODE_ON -> {
+            ImageCapture.FLASH_MODE_OFF -> {
                 imageCapture?.flashMode = ImageCapture.FLASH_MODE_OFF
                 btn.setImageResource(R.drawable.ic_flash_off)
-            }
-            ImageCapture.FLASH_MODE_OFF -> {
-                imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
-                btn.setImageResource(R.drawable.ic_auto_flash)
             }
         }
     }

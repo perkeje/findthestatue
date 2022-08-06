@@ -1,4 +1,4 @@
-package com.example.findthestatue
+package com.example.findthestatue.utils
 
 import android.content.Context
 import android.os.Build
@@ -10,7 +10,7 @@ import com.google.gson.reflect.TypeToken
 
 
 class Prefs {
-    companion object{
+    companion object {
         fun saveArrayList(list: ArrayList<Int?>?, context: Context) {
             val prefs = context.getSharedPreferences("saved", Context.MODE_PRIVATE)
             val gson = Gson()

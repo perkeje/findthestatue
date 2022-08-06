@@ -1,22 +1,36 @@
-package com.example.findthestatue
+package com.example.findthestatue.network
 
 import android.graphics.Bitmap
 import com.google.gson.Gson
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
 import org.json.JSONObject
 
-class RequestController {
+class RequestController(private val inputImgBitmap: Bitmap) {
+    var call: Call? = null
+
+    init {
+        createCall()
+    }
+
     companion object {
         private const val INPUT_IMG_HEIGHT = 256
         private const val INPUT_IMG_WIDTH = 256
-        private const val URL = "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
+        private const val URL =
+            "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
         private val JSON = "application/json; charset=utf-8".toMediaType()
     }
 
-    fun createRESTRequest(inputImgBitmap: Bitmap): Request {
+    private fun createCall() {
+        val client = OkHttpClient()
+        call = client.newCall(createRESTRequest())
+    }
+
+
+    private fun createRESTRequest(): Request {
         val inputImg = IntArray(INPUT_IMG_HEIGHT * INPUT_IMG_WIDTH)
         val inputImgRGB = Array(1) {
             Array(INPUT_IMG_HEIGHT) {
@@ -54,12 +68,16 @@ class RequestController {
             .build()
     }
 
-    fun handleResponse(response:Response):Array<Float>{
-        val json = response.body!!.string()
-        response.close()
-        val responseObject = JSONObject(json)
-        val predictionsArray = responseObject.getJSONArray("predictions")
-        return Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
+    fun makeRequest(): Array<Float> {
+        call?.let {
+            val response = it.execute()
+            val json = response.body!!.string()
+            response.close()
+            val responseObject = JSONObject(json)
+            val predictionsArray = responseObject.getJSONArray("predictions")
+            return Gson().fromJson(predictionsArray[0].toString(), Array<Float>::class.java)
+        }
+        throw Error("Unable to execute request!")
     }
 
 }

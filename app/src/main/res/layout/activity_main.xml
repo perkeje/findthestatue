@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".activities.MainActivity">
 
 
     <androidx.camera.view.PreviewView
@@ -22,57 +22,55 @@
         android:layout_height="94dp"
         android:layout_marginBottom="50dp"
         android:background="@drawable/round_button"
+        android:src="@drawable/ic_camera"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:src="@drawable/ic_camera"
-        />
+        app:layout_constraintRight_toRightOf="parent" />
 
     <ImageButton
         android:id="@+id/add_photo_btn"
         android:layout_width="70dp"
         android:layout_height="70dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/image_capture_button"
-        app:layout_constraintStart_toStartOf="parent"
         android:layout_marginBottom="50dp"
+        android:background="@drawable/round_corners_button"
         android:backgroundTint="@color/second_color"
         android:src="@drawable/ic_add_existing"
-        android:background="@drawable/round_corners_button"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/image_capture_button"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <ImageButton
         android:id="@+id/show_history_btn"
         android:layout_width="70dp"
         android:layout_height="70dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/image_capture_button"
-        app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="50dp"
+        android:background="@drawable/round_corners_button"
         android:backgroundTint="@color/second_color"
         android:src="@drawable/ic_history"
-        android:background="@drawable/round_corners_button"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/image_capture_button" />
 
     <ImageButton
         android:id="@+id/set_flash_btn"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="50dp"
         android:layout_marginStart="30dp"
+        android:layout_marginTop="50dp"
         android:background="@drawable/round_button"
-        android:src="@drawable/ic_auto_flash"/>
+        android:src="@drawable/ic_auto_flash"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <View
         android:id="@+id/focus_rect"
         android:layout_width="100dp"
         android:layout_height="100dp"
+        android:background="@drawable/rect"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:background="@drawable/rect"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

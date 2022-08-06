@@ -1,4 +1,4 @@
-package com.example.findthestatue
+package com.example.findthestatue.activities
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -9,7 +9,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.*
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.view.View
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,7 +20,9 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.findthestatue.R
 import com.example.findthestatue.databinding.ActivityMainBinding
+import com.example.findthestatue.utils.Prefs
 import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -34,12 +38,12 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var file: File
 
-    private lateinit var camera : Camera
+    private lateinit var camera: Camera
 
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) {
-        if (it != null){
-            startInfo(it.toString(),"gallery")
+        if (it != null) {
+            startInfo(it.toString(), "gallery")
         }
 
     }
@@ -58,23 +62,24 @@ class MainActivity : AppCompatActivity() {
         val visibilityDelay = Runnable { focusRectangleView.visibility = View.GONE }
         val handler = Handler(Looper.getMainLooper())
 
-        rectangleDelay(handler,visibilityDelay)
+        rectangleDelay(handler, visibilityDelay)
         openAndClearCache()
-        setFlash(viewBinding.setFlashBtn,Prefs.getFlash(this))
+        setFlash(viewBinding.setFlashBtn, Prefs.getFlash(this))
 
         if (allPermissionsGranted()) {
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
-                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS)
+                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
+            )
         }
 
 
-        viewBinding.setFlashBtn.setOnClickListener{
+        viewBinding.setFlashBtn.setOnClickListener {
             changeFlash(viewBinding.setFlashBtn)
         }
 
-        viewBinding.addPhotoBtn.setOnClickListener{
+        viewBinding.addPhotoBtn.setOnClickListener {
             pickImage.launch("image/*")
         }
 
@@ -107,16 +112,16 @@ class MainActivity : AppCompatActivity() {
                 MotionEvent.ACTION_UP -> {
                     val factory = previewView.meteringPointFactory
 
-                    val x =event.x
+                    val x = event.x
                     val y = event.y
                     val point = factory.createPoint(x, y)
                     focusRectangleView.visibility = View.VISIBLE
-                    focusRectangleView.x= x-(focusRectangleView.width/2)
-                    focusRectangleView.y =y-(focusRectangleView.height/2)
+                    focusRectangleView.x = x - (focusRectangleView.width / 2)
+                    focusRectangleView.y = y - (focusRectangleView.height / 2)
                     val action = FocusMeteringAction.Builder(point).build()
 
                     camera.cameraControl.startFocusAndMetering(action)
-                    rectangleDelay(handler,visibilityDelay)
+                    rectangleDelay(handler, visibilityDelay)
 
                     return@setOnTouchListener true
                 }
@@ -148,9 +153,9 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun
-                        onImageSaved(output: ImageCapture.OutputFileResults){
+                        onImageSaved(output: ImageCapture.OutputFileResults) {
 
-                    startInfo(file.absolutePath,"camera")
+                    startInfo(file.absolutePath, "camera")
                 }
             }
         )
@@ -175,51 +180,56 @@ class MainActivity : AppCompatActivity() {
 
                 cameraProvider.unbindAll()
 
-                 camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview,imageCapture)
+                camera = cameraProvider.bindToLifecycle(
+                    this, cameraSelector, preview, imageCapture
+                )
 
 
-
-            } catch(exc: Exception) {
+            } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
 
         }, ContextCompat.getMainExecutor(this))
 
 
-
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(
-            baseContext, it) == PackageManager.PERMISSION_GRANTED
+            baseContext, it
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     override fun onDestroy() {
         super.onDestroy()
         cameraExecutor.shutdown()
     }
+
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults:
-        IntArray) {
+        IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera()
             } else {
-                Toast.makeText(this,
+                Toast.makeText(
+                    this,
                     "Permissions not granted by the user.",
-                    Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT
+                ).show()
                 finish()
             }
         }
     }
+
     companion object {
         private const val TAG = "FindTheStatue"
         private const val FILENAME = "appPrivate"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS =
-            mutableListOf (
+            mutableListOf(
                 Manifest.permission.CAMERA
             ).apply {
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -229,9 +239,9 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun changeFlash(btn:ImageButton){
+    private fun changeFlash(btn: ImageButton) {
         var mode = ImageCapture.FLASH_MODE_AUTO
-        when(imageCapture?.flashMode){
+        when (imageCapture?.flashMode) {
             ImageCapture.FLASH_MODE_AUTO -> {
                 mode = ImageCapture.FLASH_MODE_ON
             }
@@ -241,13 +251,14 @@ class MainActivity : AppCompatActivity() {
             ImageCapture.FLASH_MODE_OFF -> {
                 mode = ImageCapture.FLASH_MODE_AUTO
             }
+            else -> {}
         }
-        setFlash(btn,mode)
-        Prefs.saveFlash(this,mode)
+        setFlash(btn, mode)
+        Prefs.saveFlash(this, mode)
     }
 
-    private fun setFlash(btn:ImageButton,mode: Int){
-        when(mode){
+    private fun setFlash(btn: ImageButton, mode: Int) {
+        when (mode) {
             ImageCapture.FLASH_MODE_AUTO -> {
                 imageCapture?.flashMode = ImageCapture.FLASH_MODE_AUTO
                 btn.setImageResource(R.drawable.ic_auto_flash)
@@ -263,27 +274,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startInfo(URI : String,taken:String){
+    private fun startInfo(URI: String, taken: String) {
         val informationIntent = Intent(this, InformationActivity::class.java)
         informationIntent.putExtra("URI", URI)
-        informationIntent.putExtra("picTaken",taken)
+        informationIntent.putExtra("picTaken", taken)
         startActivity(informationIntent)
     }
-    private fun startHistory(){
+
+    private fun startHistory() {
         val historyIntent = Intent(this, HistoryActivity::class.java)
         startActivity(historyIntent)
     }
 
-    private fun openAndClearCache(){
-        File.createTempFile(FILENAME,null,this.cacheDir)
+    private fun openAndClearCache() {
+        File.createTempFile(FILENAME, null, this.cacheDir)
         file = File(this.cacheDir, FILENAME)
         file.delete()
     }
 
-    private fun rectangleDelay(handler: Handler,runnable: Runnable){
+    private fun rectangleDelay(handler: Handler, runnable: Runnable) {
         handler.removeCallbacks(runnable)
-        handler.postDelayed(runnable,
-            1000)
+        handler.postDelayed(
+            runnable,
+            1000
+        )
     }
 
 

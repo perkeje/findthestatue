@@ -1,4 +1,4 @@
-package com.example.findthestatue
+package com.example.findthestatue.adapters
 
 
 import android.view.LayoutInflater
@@ -10,29 +10,40 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.findthestatue.R
+import com.example.findthestatue.interfaces.FirebaseCallback
+import com.example.findthestatue.models.Statue
+import com.example.findthestatue.utils.Animations
+import com.example.findthestatue.utils.Prefs
 
 
-class HistoryRecyclerAdapter:
+class HistoryRecyclerAdapter :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var items: ArrayList<Int> = ArrayList()
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int):
             RecyclerView.ViewHolder {
-         val view = StatueViewHolder(
-            LayoutInflater.from(parent.context).inflate(R.layout.recycle_view_item, parent,false))
+        val view = StatueViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.recycle_view_item, parent, false)
+        )
         return view.linkAdapter(this)
 
     }
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder,
-                                  position: Int) {
-        when(holder) {
+
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int
+    ) {
+        when (holder) {
             is StatueViewHolder -> {
                 holder.bind(items[position])
             }
         }
     }
+
     override fun getItemCount(): Int {
         return items.size
     }
+
     fun postItemsList(data: ArrayList<Int>) {
         items = data
     }
@@ -44,7 +55,7 @@ class HistoryRecyclerAdapter:
 
     class StatueViewHolder constructor(
         itemView: View
-    ): RecyclerView.ViewHolder(itemView) {
+    ) : RecyclerView.ViewHolder(itemView) {
         private val statueImg: ImageView =
             itemView.findViewById(R.id.statuePhoto)
         private val statueName: TextView =
@@ -53,11 +64,11 @@ class HistoryRecyclerAdapter:
             itemView.findViewById(R.id.statue_description)
         private val descriptionLayout: ConstraintLayout =
             itemView.findViewById(R.id.description_layout)
-        private lateinit var adapter :HistoryRecyclerAdapter;
+        private lateinit var adapter: HistoryRecyclerAdapter
 
         fun bind(item: Int) {
 
-            Statue.fromIndex(item,object :FirebaseCallback {
+            Statue.fromIndex(item, object : FirebaseCallback {
                 override fun onResponse(statue: Statue?) {
                     statue?.let {
                         statueName.text = statue.name
@@ -74,22 +85,21 @@ class HistoryRecyclerAdapter:
 
             itemView.findViewById<ImageButton>(R.id.rm_btn).setOnClickListener {
                 adapter.removeAt(adapterPosition)
-                var list = Prefs.getArrayList(itemView.context)
+                val list = Prefs.getArrayList(itemView.context)
                 list?.remove(item)
-                Prefs.saveArrayList(list,itemView.context)
+                Prefs.saveArrayList(list, itemView.context)
             }
-            this.itemView.setOnClickListener{
+            this.itemView.setOnClickListener {
                 if (descriptionLayout.visibility == View.GONE) {
                     Animations.expand(descriptionLayout)
-                }
-                else{
+                } else {
                     Animations.collapse(descriptionLayout)
                 }
             }
         }
 
-        fun linkAdapter(adapter: HistoryRecyclerAdapter):StatueViewHolder{
-            this.adapter=adapter
+        fun linkAdapter(adapter: HistoryRecyclerAdapter): StatueViewHolder {
+            this.adapter = adapter
             return this
         }
     }

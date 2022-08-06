@@ -1,7 +1,6 @@
 package com.example.findthestatue
 
 
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,16 +12,11 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
 
 
 class HistoryRecyclerAdapter:
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var items: ArrayList<Int> = ArrayList()
-    private val database = Firebase.database
-    private val myRef = database.getReference("/")
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int):
             RecyclerView.ViewHolder {
          val view = StatueViewHolder(
@@ -34,7 +28,7 @@ class HistoryRecyclerAdapter:
                                   position: Int) {
         when(holder) {
             is StatueViewHolder -> {
-                holder.bind(items[position],myRef)
+                holder.bind(items[position])
             }
         }
     }
@@ -63,42 +57,35 @@ class HistoryRecyclerAdapter:
             itemView.findViewById(R.id.description_layout)
         private lateinit var adapter :HistoryRecyclerAdapter;
 
-        fun bind(item: Int,myRef:DatabaseReference) {
+        fun bind(item: Int) {
 
-            myRef.child(item.toString()).child("name").get().addOnSuccessListener {
-                statueName.text = it.value.toString()
-            }.addOnFailureListener{
-                Log.e("firebase", "Error getting data", it)
-            }
-            myRef.child(item.toString()).child("description").get().addOnSuccessListener {
-                statueDescription.text = it.value.toString()
-            }.addOnFailureListener{
-                Log.e("firebase", "Error getting data", it)
-            }
-            myRef.child(item.toString()).child("img").get().addOnSuccessListener {
-                Glide
-                    .with(itemView.context)
-                    .load(it.value.toString())
-                    .centerCrop()
-                    .into(statueImg)
-            }.addOnFailureListener{
-                Log.e("firebase", "Error getting data", it)
-            }
+            Statue.fromIndex(item,object :FirebaseCallback {
+                override fun onResponse(statue: Statue?) {
+                    statue?.let {
+                        statueName.text = statue.name
+                        statueDescription.text = statue.description
+                        Glide
+                            .with(itemView.context)
+                            .load(statue.img)
+                            .centerCrop()
+                            .into(statueImg)
+                    }
 
+                }
+            })
 
             itemView.findViewById<ImageButton>(R.id.rm_btn).setOnClickListener {
-                val prefs = Prefs()
                 adapter.removeAt(adapterPosition)
-                var list = prefs.getArrayList(itemView.context)
+                var list = Prefs.getArrayList(itemView.context)
                 list?.remove(item)
-                prefs.saveArrayList(list,itemView.context)
+                Prefs.saveArrayList(list,itemView.context)
             }
             this.itemView.setOnClickListener{
                 if (descriptionLayout.visibility == View.GONE) {
-                    expand(descriptionLayout)
+                    Animations.expand(descriptionLayout)
                 }
                 else{
-                    collapse(descriptionLayout)
+                    Animations.collapse(descriptionLayout)
                 }
             }
         }
@@ -111,41 +98,3 @@ class HistoryRecyclerAdapter:
 }
 
 
-fun expand(view: View) {
-    val animation = expandAction(view)
-    view.startAnimation(animation)
-}
-
-private fun expandAction(view: View): Animation {
-    view.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-    val actualheight = view.measuredHeight
-    view.layoutParams.height = 0
-    view.visibility = View.VISIBLE
-    val animation: Animation = object : Animation() {
-        override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
-            view.layoutParams.height =
-                if (interpolatedTime == 1f) ViewGroup.LayoutParams.WRAP_CONTENT
-                else (actualheight * interpolatedTime).toInt()
-            view.requestLayout()
-        }
-    }
-    animation.duration = ((actualheight / view.context.resources.displayMetrics.density)).toLong()
-    view.startAnimation(animation)
-    return animation
-}
-
-fun collapse(view: View) {
-    val actualHeight = view.measuredHeight
-    val animation: Animation = object : Animation() {
-        override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
-            if (interpolatedTime == 1f) {
-                view.visibility = View.GONE
-            } else {
-                view.layoutParams.height = actualHeight - (actualHeight * interpolatedTime).toInt()
-                view.requestLayout()
-            }
-        }
-    }
-    animation.duration = ((actualHeight / view.context.resources.displayMetrics.density)/2.5 ).toLong()
-    view.startAnimation(animation)
-}

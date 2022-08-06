@@ -19,17 +19,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
-import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Call
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okio.IOException
 import org.json.JSONException
-import org.json.JSONObject
 
 
 class InformationActivity : AppCompatActivity() {
@@ -37,74 +34,37 @@ class InformationActivity : AppCompatActivity() {
     private  lateinit var title:TextView
     private lateinit var  controlImg:ImageView
     private lateinit var favouriteImg:ImageButton
+    private lateinit var progressBar:ProgressBar
+    private lateinit var bottomSheet:ConstraintLayout
     private lateinit var call: Call
-    private val prefs = Prefs()
+    var maxIdx = -1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_information)
+        Prefs.setView(window)
 
-        prefs.setView(window)
-
-        val imageView = findViewById<ImageView>(R.id.photo_holder)
-        val bottomSheet = findViewById<ConstraintLayout>(R.id.bottom_sheet_layout)
-        val backBtn = findViewById<ImageButton>(R.id.back_btn)
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+        bottomSheet = findViewById(R.id.bottom_sheet_layout)
+        progressBar = findViewById(R.id.progressBar)
         favouriteImg = findViewById(R.id.favourite_btn)
         description = findViewById(R.id.description)
         title = findViewById(R.id.name)
         controlImg = findViewById(R.id.control_img)
-        val uri = intent.getStringExtra("URI")
-        var bitmap:Bitmap
-        var maxIdx = -1
 
-         if(intent.getStringExtra("picTaken") == "camera") {
-            bitmap = BitmapFactory.decodeFile(uri )
-            val matrix = Matrix()
-            matrix.postRotate(90F)
-            bitmap =  Bitmap.createBitmap(bitmap,0,0,bitmap.width,bitmap.height,matrix,true)
-        }
-        else {
-            bitmap = getCapturedImage(Uri.parse(uri))
-             bitmap = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        }
+        val imageView = findViewById<ImageView>(R.id.photo_holder)
+        val backBtn = findViewById<ImageButton>(R.id.back_btn)
+
+        val uri = intent.getStringExtra("URI").toString()
+        val mode = intent.getStringExtra("picTaken").toString()
+        val imgController = ImageController(uri,mode,this)
+
+        val bitmap = imgController.getBitmap()
 
         imageView.setImageURI(Uri.parse(uri))
 
-        val request = createRESTRequest(bitmap)
-        val thread = Thread {
-            val client = OkHttpClient()
-            try {
-                call = client.newCall(request)
-                val response = call.execute()
-                val json = response.body!!.string()
-                response.close()
-                val responseObject = JSONObject(json)
-                val predictionsArray = responseObject.getJSONArray("predictions")
-                val predictions = Gson().fromJson(predictionsArray[0].toString(),Array<Float>::class.java)
-                maxIdx = predictions.indices.maxBy { predictions[it] }
-                this.runOnUiThread{
-                    setText(maxIdx)
-                    progressBar.visibility=View.GONE
-                    bottomSheet.visibility = View.VISIBLE
-                    val favourites = prefs.getArrayList(this)
-                    if (favourites != null && favourites.contains(maxIdx)) {
-                        favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                    }
-                    else{
-                        favouriteImg.setImageResource(R.drawable.favourite_foreground)
-                    }
-                    favouriteImg.visibility = View.VISIBLE
-                }
-            } catch (e: IOException) {
-                Log.e(TAG, e.message!!)
-
-            } catch (e: JSONException) {
-                Log.e(TAG, e.message!!)
-
-            }
+        GlobalScope.launch {
+            makeRequest(bitmap)
         }
-
-        thread.start()
 
         val bottomSheetBehaviour = BottomSheetBehavior.from(bottomSheet).apply {
             peekHeight = 400
@@ -121,26 +81,27 @@ class InformationActivity : AppCompatActivity() {
 
 
         favouriteImg.setOnClickListener{
-            var favourites = prefs.getArrayList(this)
+            var favourites = Prefs.getArrayList(this)
             if (favourites != null) {
                 if(favourites.contains(maxIdx)){
                     favouriteImg.setImageResource(R.drawable.favourite_foreground)
                     favourites.remove(maxIdx)
-                    prefs.saveArrayList(favourites,this)
-            }
+                    Prefs.saveArrayList(favourites,this)
+                }
                 else{
                     favourites.add(maxIdx)
                     favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                    prefs.saveArrayList(favourites,this)
+                    Prefs.saveArrayList(favourites,this)
                 }
             }
             else{
                 favourites = ArrayList()
                 favourites.add(maxIdx)
                 favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                prefs.saveArrayList(favourites,this)
+                Prefs.saveArrayList(favourites,this)
             }
         }
+
         backBtn.setOnClickListener {
             onBackPressed()
         }
@@ -154,89 +115,49 @@ class InformationActivity : AppCompatActivity() {
     }
 
     private fun setText(index : Int){
-        val database = Firebase.database
-        val myRef = database.getReference("/")
 
-
-        myRef.child(index.toString()).child("name").get().addOnSuccessListener {
-            title.text = it.value.toString()
-        }.addOnFailureListener{
-            Log.e("firebase", "Error getting data", it)
-        }
-        myRef.child(index.toString()).child("description").get().addOnSuccessListener {
-            description.text = it.value.toString()
-        }.addOnFailureListener{
-            Log.e("firebase", "Error getting data", it)
-        }
-        myRef.child(index.toString()).child("img").get().addOnSuccessListener {
-            Glide.with(this)
-                .load(it.value.toString())
-                .into(controlImg)
-        }.addOnFailureListener{
-            Log.e("firebase", "Error getting data", it)
-        }
-
-    }
-
-private fun getCapturedImage(selectedPhotoUri: Uri): Bitmap {
-    val bitmap = when {
-        Build.VERSION.SDK_INT < 28 -> MediaStore.Images.Media.getBitmap(
-            this.contentResolver,
-            selectedPhotoUri
-        )
-        else -> {
-            val source = ImageDecoder.createSource(this.contentResolver, selectedPhotoUri)
-            ImageDecoder.decodeBitmap(source)
-        }
-    }
-    return bitmap
-}
-
-    private fun createRESTRequest(inputImgBitmap: Bitmap): Request {
-        val inputImg = IntArray(INPUT_IMG_HEIGHT * INPUT_IMG_WIDTH)
-        val inputImgRGB = Array(1) {
-            Array(INPUT_IMG_HEIGHT) {
-                Array(INPUT_IMG_WIDTH) {
-                    IntArray(3)
-                }
+        Statue.fromIndex(index,object :FirebaseCallback{
+            override fun onResponse(statue: Statue?) {
+                runOnUiThread {
+                    statue?.let {
+                        title.text = statue!!.name
+                        description.text = statue!!.description
+                        Glide.with(baseContext)
+                            .load(statue!!.img)
+                            .into(controlImg)
+                    }
+                    progressBar.visibility=View.GONE
+                    bottomSheet.visibility = View.VISIBLE
+                    statue?.let {
+                        val favourites = Prefs.getArrayList(baseContext)
+                        if (favourites != null && favourites.contains(index)) {
+                            favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+                        }
+                        else{
+                            favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                        }
+                        favouriteImg.visibility = View.VISIBLE
+                    }
             }
         }
-        inputImgBitmap.getPixels(
-            inputImg,
-            0,
-            INPUT_IMG_WIDTH,
-            0,
-            0,
-            INPUT_IMG_WIDTH,
-            INPUT_IMG_HEIGHT
-        )
-        var pixel: Int
+    })
+    }
 
-        for (i in 0 until INPUT_IMG_HEIGHT) {
-            for (j in 0 until INPUT_IMG_WIDTH) {
-                pixel = inputImg[i * INPUT_IMG_WIDTH + j]
-                inputImgRGB[0][i][j][0] = pixel shr 16 and 0xff
-                inputImgRGB[0][i][j][1] = pixel shr 8 and 0xff
-                inputImgRGB[0][i][j][2] = pixel and 0xff
-            }
+    private fun makeRequest(bitmap:Bitmap){
+        val requestController = RequestController()
+        val request = requestController.createRESTRequest(bitmap)
+        val client = OkHttpClient()
+        try {
+            call = client.newCall(request)
+            val predictions = requestController.handleResponse(call.execute())
+            maxIdx = predictions.indices.maxBy { predictions[it] }
+            setText(maxIdx)
+
+        } catch (e: IOException) {
+            Log.e(TAG, e.message!!)
+
+        } catch (e: JSONException) {
+            Log.e(TAG, e.message!!)
         }
-        val requestBody =
-            ("{\"instances\": " + inputImgRGB.contentDeepToString() + "}").toRequestBody(JSON)
-
-
-        return Request.Builder()
-            .url(URL)
-            .post(requestBody)
-            .build()
     }
-
-    companion object {
-        private const val INPUT_IMG_HEIGHT = 256
-        private const val INPUT_IMG_WIDTH = 256
-        private const val URL = "https://serving-container-nsplv7rfta-ew.a.run.app/v1/models/statue-recognizer:predict"
-        private val JSON = "application/json; charset=utf-8".toMediaType()
-    }
-
 }
-
-

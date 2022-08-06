@@ -37,12 +37,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var camera : Camera
 
-    private val prefs = Prefs()
-
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) {
         if (it != null){
-            startInfo(it.toString(),"galery")
+            startInfo(it.toString(),"gallery")
         }
 
     }
@@ -53,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(viewBinding.root)
 
-        prefs.setView(window)
+        Prefs.setView(window)
 
         val previewView = viewBinding.viewFinder
         val focusRectangleView = viewBinding.focusRect
@@ -63,7 +61,7 @@ class MainActivity : AppCompatActivity() {
 
         rectangleDelay(handler,visibilityDelay)
         openAndClearCache()
-        setFlash(viewBinding.setFlashBtn,prefs.getFlash(this))
+        setFlash(viewBinding.setFlashBtn,Prefs.getFlash(this))
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -138,7 +136,6 @@ class MainActivity : AppCompatActivity() {
         val imageCapture = imageCapture ?: return
 
 
-
         val outputOptions = ImageCapture.OutputFileOptions
             .Builder(file)
             .build()
@@ -172,7 +169,7 @@ class MainActivity : AppCompatActivity() {
                 .also {
                     it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
-            imageCapture = ImageCapture.Builder().setFlashMode(prefs.getFlash(this)).build()
+            imageCapture = ImageCapture.Builder().setFlashMode(Prefs.getFlash(this)).build()
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -247,7 +244,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
         setFlash(btn,mode)
-        prefs.saveFlash(this,mode)
+        Prefs.saveFlash(this,mode)
     }
 
     private fun setFlash(btn:ImageButton,mode: Int){

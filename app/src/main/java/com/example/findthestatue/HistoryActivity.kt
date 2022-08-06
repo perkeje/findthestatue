@@ -1,13 +1,11 @@
 package com.example.findthestatue
 
-import android.content.Context
+
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.ImageButton
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 
 class HistoryActivity : AppCompatActivity() {
     private lateinit var historyAdapter: HistoryRecyclerAdapter

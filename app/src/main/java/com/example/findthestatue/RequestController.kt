@@ -2,7 +2,6 @@ package com.example.findthestatue
 
 import android.graphics.Bitmap
 import com.google.gson.Gson
-import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody

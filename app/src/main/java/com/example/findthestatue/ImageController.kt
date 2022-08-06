@@ -8,7 +8,6 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import java.net.URI
 
 class ImageController(val uri:String,val mode:String,val context: Context) {
 

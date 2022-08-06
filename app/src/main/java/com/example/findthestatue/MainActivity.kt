@@ -20,7 +20,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.findthestatue.databinding.ActivityMainBinding
 import java.io.File
-import java.net.URI
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 

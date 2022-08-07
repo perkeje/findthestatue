@@ -114,39 +114,41 @@ class InformationActivity : AppCompatActivity() {
 
     }
 
-    private fun setText(index: Int) {
+    private fun setText(predictions: Array<Float>) {
 
-        Statue.fromIndex(index, object : FirebaseCallback {
-            override fun onResponse(statue: Statue?) {
-                runOnUiThread {
-                    statue?.let {
-                        title.text = statue.name
-                        description.text = statue.description
-                        Glide.with(baseContext)
-                            .load(statue.img)
-                            .into(controlImg)
-                    }
-                    progressBar.visibility = View.GONE
-                    bottomSheet.visibility = View.VISIBLE
-                    statue?.let {
-                        val favourites = Prefs.getArrayList(baseContext)
-                        if (favourites != null && favourites.contains(index)) {
-                            favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
-                        } else {
-                            favouriteImg.setImageResource(R.drawable.favourite_foreground)
+        maxIdx = predictions.indices.maxBy { predictions[it] }
+        runOnUiThread {
+            if (predictions[maxIdx] > 0.5) {
+                Statue.fromIndex(maxIdx, object : FirebaseCallback {
+                    override fun onResponse(statue: Statue?) {
+
+                        statue?.let {
+                            title.text = statue.name
+                            description.text = statue.description
+                            Glide.with(baseContext)
+                                .load(statue.img)
+                                .into(controlImg)
+
+                            val favourites = Prefs.getArrayList(baseContext)
+                            if (favourites != null && favourites.contains(maxIdx)) {
+                                favouriteImg.setImageResource(R.drawable.favourite_filled_foreground)
+                            } else {
+                                favouriteImg.setImageResource(R.drawable.favourite_foreground)
+                            }
+                            favouriteImg.visibility = View.VISIBLE
                         }
-                        favouriteImg.visibility = View.VISIBLE
                     }
-                }
+
+                })
             }
-        })
+            progressBar.visibility = View.GONE
+            bottomSheet.visibility = View.VISIBLE
+        }
     }
 
     private fun handleResponse() {
         try {
-            val predictions = reqController.makeRequest()
-            maxIdx = predictions.indices.maxBy { predictions[it] }
-            setText(maxIdx)
+            setText(reqController.makeRequest())
 
         } catch (e: IOException) {
             Log.e(TAG, e.message!!)

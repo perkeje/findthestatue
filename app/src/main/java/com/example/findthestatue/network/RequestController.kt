@@ -1,6 +1,8 @@
 package com.example.findthestatue.network
 
 import android.graphics.Bitmap
+import android.util.Log
+import com.example.findthestatue.utils.ImageConverter
 import com.google.gson.Gson
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
@@ -9,7 +11,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
-class RequestController(private val inputImgBitmap: Bitmap) {
+class RequestController(private var inputImgBitmap: Bitmap) {
     var call: Call? = null
 
     init {
@@ -32,14 +34,16 @@ class RequestController(private val inputImgBitmap: Bitmap) {
 
     private fun createRESTRequest(): Request {
         val inputImg = IntArray(INPUT_IMG_HEIGHT * INPUT_IMG_WIDTH)
-        val inputImgRGB = Array(1) {
+        var inputImgRGB = Array(1) {
             Array(INPUT_IMG_HEIGHT) {
                 Array(INPUT_IMG_WIDTH) {
                     IntArray(3)
                 }
             }
         }
-        inputImgBitmap.getPixels(
+        val cropped = ImageConverter.cropBitmap(inputImgBitmap)
+        val resized = Bitmap.createScaledBitmap(cropped, INPUT_IMG_HEIGHT, INPUT_IMG_WIDTH, true)
+        resized.getPixels(
             inputImg,
             0,
             INPUT_IMG_WIDTH,
@@ -48,6 +52,8 @@ class RequestController(private val inputImgBitmap: Bitmap) {
             INPUT_IMG_WIDTH,
             INPUT_IMG_HEIGHT
         )
+
+        Log.d("Dims", "${cropped.width} ${cropped.height}")
         var pixel: Int
 
         for (i in 0 until INPUT_IMG_HEIGHT) {

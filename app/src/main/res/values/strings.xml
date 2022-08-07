@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">FindTheStatue</string>
-    <string name="blank_title">Prepoznajem sliku…</string>
-    <string name="blank_description">Provjeravam rezultat… Ako zahtjev traje predugo provjerite internet vezu.</string>
+    <string name="blank_title">Nepoznato</string>
+    <string name="blank_description">Ovaj objekt mi nije poznat. Probajte uslikati opet...</string>
     <string name="loading">Učitavam...</string>
     <string name="favourites">Favoriti</string>
 </resources>

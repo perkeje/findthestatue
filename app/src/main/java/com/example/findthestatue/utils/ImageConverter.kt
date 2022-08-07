@@ -40,4 +40,33 @@ class ImageConverter(val uri: String, val mode: String, val context: Context) {
         }
         return bitmap
     }
+
+    companion object {
+        fun cropBitmap(bitmap: Bitmap): Bitmap {
+            var dstBmp: Bitmap
+            if (bitmap.width >= bitmap.height) {
+
+                dstBmp = Bitmap.createBitmap(
+                    bitmap,
+                    bitmap.width / 2 - bitmap.height / 2,
+                    0,
+                    bitmap.height,
+                    bitmap.height
+                )
+
+            } else {
+
+                dstBmp = Bitmap.createBitmap(
+                    bitmap,
+                    0,
+                    bitmap.height / 2 - bitmap.width / 2,
+                    bitmap.width,
+                    bitmap.width
+                )
+            }
+            return dstBmp
+        }
+
+    }
+
 }
